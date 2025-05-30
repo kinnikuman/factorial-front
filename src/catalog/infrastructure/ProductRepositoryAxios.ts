@@ -14,7 +14,7 @@ export class ProductRepositoryAxios implements ProductRepository {
     }
   }
 
-  async findById(id: number): Promise<Product> {
+  async findById(id: string): Promise<Product> {
     try {
       const response = await axios.get<Product>(`${this.baseUrl}/products/${id}`)
       return response.data

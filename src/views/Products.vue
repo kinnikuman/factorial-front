@@ -8,21 +8,32 @@
       {{ error }}
     </div>
     <div v-else class="products-list">
-      <ProductCard v-for="product in products" :key="product.id" :product="product" />
+      <ProductCard 
+        v-for="product in products" 
+        :key="product.id" 
+        :product="product" 
+        @edit="handleEditProduct" 
+      />
     </div>
   </div>
 </template>
 
-<script setup>
-import { onMounted } from 'vue'
+<script lang="ts" setup>
+import { defineEmits, onMounted } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
 import { catalog } from '../catalog'
+
+const emit = defineEmits(['edit-product'])
 
 const { products, loading, error } = catalog.listProducts.state
 
 onMounted(() => {
   catalog.listProducts.execute()
 })
+
+const handleEditProduct = (productId) => {
+  emit('edit-product', productId)
+}
 </script>
 
 <style scoped>

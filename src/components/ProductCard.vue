@@ -3,19 +3,27 @@
     <img :src="product.image" :alt="product.name" class="product-image" />
     <h3>{{ product.name }}</h3>
     <p class="product-price">${{ product.price }}</p>
-    <router-link :to="`/products/${product.id}/edit`" class="edit-button">
+    <button @click="configureProduct" class="edit-button">
       Configure
-    </router-link>
+    </button>
   </div>
 </template>
 
 <script setup>
+import { defineEmits } from 'vue'
+
+const emit = defineEmits(['edit'])
+
 const props = defineProps({
   product: {
     type: Object,
     required: true
   }
 })
+
+const configureProduct = () => {
+  emit('edit', props.product.id)
+}
 </script>
 
 <style scoped>

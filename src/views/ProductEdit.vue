@@ -129,16 +129,39 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, type Ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted, type Ref, watch } from 'vue'
 import { catalog } from '../catalog'
 import { cart } from '../cart'
 import { ProductOption, SelectedOptions } from '../catalog/domain/ProductOption'
 import { ProductOptionsService } from '../catalog/domain/services/ProductOptionsService'
 
-const route = useRoute()
-const router = useRouter()
-const productId = route.params.id as string
+const props = defineProps({
+  productId: {
+    type: [String, Number],
+    required: true
+  }
+})
+
+const emit = defineEmits(['back'])
+
+// Reaccionar a cambios en el productId
+watch(() => props.productId, (newId) => {
+  if (newId) {
+    loadProduct()
+  }
+})
+
+interface ProductState {
+  id: string | number;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  type?: string | number;
+  type_id?: string | number;
+  options?: string[];
+}
+
 const product = ref<ProductState>({
   id: '',
   name: 'Loading...',
@@ -268,8 +291,15 @@ function updateOptions(optionType: string, valueId: string | null) {
 // Initialize selected options from product options
 function initSelectedOptions() {
   if (!product.value?.options || !Array.isArray(product.value.options) || !optionsService.value) {
+    console.log('Cannot initialize options:', { 
+      hasOptions: !!product.value?.options, 
+      isArray: Array.isArray(product.value?.options),
+      hasService: !!optionsService.value
+    });
     return;
   }
+  
+  console.log('Initializing options with:', product.value.options);
   
   const initialOptions: SelectedOptions = {};
   const productOptions = product.value.options;
@@ -295,16 +325,37 @@ function initSelectedOptions() {
   optionsService.value.updateSelectedOptions(initialOptions);
 }
 
-onMounted(async () => {
+const loadProduct = async () => {
   try {
     // Load product details
-    const productData = await catalog.getProduct.execute(productId);
-    product.value = productData;
+    const productData = await catalog.getProduct.execute(String(props.productId));
+    
+    // Asegurarse de que productData tenga los campos requeridos
+    if (!productData) {
+      throw new Error('Product not found')
+    }
+    
+    // Asegurarse de que el id sea siempre un string
+    const productId = productData.id ? String(productData.id) : '';
+    
+    product.value = {
+      id: productId,
+      name: productData.name || 'Unknown Product',
+      description: productData.description || '',
+      price: productData.price || 0,
+      image: productData.image || '',
+      type: productData.type,
+      type_id: productData.type_id,
+      options: productData.options || []
+    };
+    
+    console.log('Product loaded:', product.value);
     
     // Load configurable options if the product has a type
-    if (product.value.type) {
+    if (productData.type || productData.type_id) {
       try {
-        const options = await catalog.productOptions.execute(product.value.type);
+        const typeId = product.value.type_id || product.value.type;
+        const options = await catalog.productOptions.execute(typeId);
         
         configurableOptions.value = options;
         
@@ -312,9 +363,11 @@ onMounted(async () => {
         optionsService.value = new ProductOptionsService(options);
         
         // Initialize selected options from the product
-        if (product.value.options && product.value.options.length > 0) {
+        console.log('Product options before init:', product.value.options);
+        if (product.value.options && Array.isArray(product.value.options) && product.value.options.length > 0) {
           initSelectedOptions();
         } else {
+          console.log('No options to initialize');
           selectedOptions.value = {};
         }
       } catch (error) {
@@ -322,9 +375,19 @@ onMounted(async () => {
       }
     }
   } catch (error) {
-    console.error('Error loading product details:', error);
+    console.error('Error loading product:', error)
   }
-});
+}
+
+onMounted(() => {
+  if (props.productId) {
+    loadProduct()
+  }
+})
+
+async function goBack() {
+  emit('back')
+}
 
 async function addToCart() {
   try {
