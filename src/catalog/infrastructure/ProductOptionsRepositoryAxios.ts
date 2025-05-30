@@ -12,13 +12,13 @@ export class ProductOptionsRepositoryAxios implements ProductOptionsRepository {
       )
       
       if (!Array.isArray(response.data)) {
-        throw new Error('La respuesta de la API no tiene el formato esperado');
+        throw new Error('API response does not have the expected format');
       }
       
-      // Agrupar opciones por tipo
+      // Group options by type
       const optionsByType: Record<string, any[]> = {};
       
-      // Agrupar las opciones por tipo
+      // Group options by type
       response.data.forEach((option) => {
         if (!option.type) {
           console.warn('Opción sin tipo:', option);
@@ -33,11 +33,11 @@ export class ProductOptionsRepositoryAxios implements ProductOptionsRepository {
       });
       
       
-      // Convertir a la estructura esperada de ProductOption[]
+      // Convert to the expected ProductOption[] structure
       const result: ProductOption[] = Object.entries(optionsByType).map(([type, options]) => {
         return {
           id: `${type}_group`,
-          type: type as any, // Convertir a los tipos permitidos
+          type: type as any,
           name: this.getOptionTypeName(type),
           values: options.map(opt => ({
             id: opt.id,
@@ -61,7 +61,6 @@ export class ProductOptionsRepositoryAxios implements ProductOptionsRepository {
   }
 
   private getOptionTypeName(type: string): string {
-    // Mapeo de tipos a nombres amigables
     const typeNames: Record<string, string> = {
       'frame': 'Cuadro',
       'wheels': 'Ruedas',

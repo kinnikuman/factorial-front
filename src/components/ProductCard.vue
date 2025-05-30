@@ -4,7 +4,7 @@
     <h3>{{ product.name }}</h3>
     <p class="product-price">${{ product.price }}</p>
     <router-link :to="`/products/${product.id}/edit`" class="edit-button">
-      Configurar
+      Configure
     </router-link>
   </div>
 </template>

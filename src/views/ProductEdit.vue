@@ -163,10 +163,10 @@ const configurableOptions = ref<ProductOption[]>([]);
 const selectedOptions = ref<SelectedOptions>({});
 const optionsService = ref<ProductOptionsService | null>(null);
 
-// Verifica si existe un tipo de opción
+// Check if an option type exists
 function hasOptionType(optionType: string): boolean {
   if (!Array.isArray(configurableOptions.value)) {
-    console.warn('configurableOptions no es un array');
+    console.warn('configurableOptions is not an array');
     return false;
   }
   
@@ -175,66 +175,66 @@ function hasOptionType(optionType: string): boolean {
     return option.type === optionType;
   });
   
-  console.log(`¿Existe ${optionType}?`, exists);
   return exists;
 }
 
-// Obtiene los valores para un tipo de opción específico
+// Get values for a specific option type
 function getOptionValues(optionType: string): ProductOptionValue[] {
   if (!optionsService.value) {
-    console.warn('El servicio de opciones no está inicializado');
+    console.warn('Options service is not initialized');
     return [];
   }
   
-  // Buscar directamente en las opciones configurables
+  // Search directly in the configurable options
   const option = configurableOptions.value.find(opt => opt.type === optionType);
   if (!option || !Array.isArray(option.values)) {
-    console.warn(`No se encontró la opción ${optionType} o no tiene valores`);
+    console.log(`Does ${optionType} exist?`, exists); 
+    console.log(`Option ${optionType} not found or has no values`);
     return [];
   }
   
-  // Filtrar valores disponibles según restricciones
+  // Filter available values according to restrictions
   const availableValues = option.values.filter(value => {
     if (!value || !value.id) return false;
     
-    // Si es la opción actualmente seleccionada, siempre mostrarla
+    // If it's the currently selected option, always show it
     if (selectedOptions.value[optionType] === value.id) {
       return true;
     }
     
-    // Verificar restricciones
+    // Check restrictions
     return isOptionAvailable(optionType, value.id);
   });
   
   return availableValues;
 }
 
-// Verifica si una opción específica está disponible
+// Check if a specific option is available
 function isOptionAvailable(optionType: string, valueId: string): boolean {
   if (!optionType || !valueId) return false;
   
-  // Buscar la opción en las opciones configurables
+  // Find the option in the configurable options
   const option = configurableOptions.value.find(opt => opt.type === optionType);
   if (!option || !Array.isArray(option.values)) return false;
   
-  // Buscar el valor específico
+  // Find the specific value
   const value = option.values.find(v => v && v.id === valueId);
   if (!value) return false;
   
-  // Verificar restricciones en ambas direcciones
+  // Check restrictions in both directions
   for (const [type, selectedId] of Object.entries(selectedOptions.value)) {
-    // Ignorar la opción que estamos evaluando
+    // Ignore the option we're evaluating
     if (type === optionType) continue;
     
-    // Si no hay un valor seleccionado para este tipo, continuar
+    // If there's no selected value for this type, continue
     if (!selectedId) continue;
     
-    // 1. Verificar si la opción seleccionada está en las restricciones del valor actual
+    // 1. Check if the selected option is in the current value's restrictions
     if (value.restrictions && Array.isArray(value.restrictions) && value.restrictions.includes(selectedId)) {
       return false;
     }
     
-    // 2. Verificar si el valor actual está en las restricciones de la opción seleccionada
+    // 2. Check if the current value is in the selected option's restrictions
     const selectedOption = configurableOptions.value.find(opt => opt.type === type);
     if (!selectedOption || !Array.isArray(selectedOption.values)) continue;
     
@@ -250,13 +250,13 @@ function isOptionAvailable(optionType: string, valueId: string): boolean {
   return true;
 }
 
-// Actualizar opciones cuando cambia una selección
+// Update options when a selection changes
 function updateOptions(optionType: string, valueId: string | null) {
   if (!optionsService.value || !optionType) return;
   
     const newOptions = optionsService.value.updateOptions(optionType, valueId);
     if (newOptions) {
-      // Actualizamos solo la opción que cambió
+      // Update only the changed option
       selectedOptions.value = { 
         ...selectedOptions.value,
         [optionType]: valueId || undefined 
@@ -265,7 +265,7 @@ function updateOptions(optionType: string, valueId: string | null) {
     }
 }
 
-// Inicializar las opciones seleccionadas desde las opciones del producto
+// Initialize selected options from product options
 function initSelectedOptions() {
   if (!product.value?.options || !Array.isArray(product.value.options) || !optionsService.value) {
     return;
@@ -274,13 +274,13 @@ function initSelectedOptions() {
   const initialOptions: SelectedOptions = {};
   const productOptions = product.value.options;
   
-  // Para cada opción del producto, buscar a qué tipo pertenece
+  // For each product option, find which type it belongs to
   productOptions.forEach(optionId => {
-    // Buscar en cada opción configurable
+    // Search through each configurable option
     configurableOptions.value.forEach(configOption => {
       if (!configOption.values) return;
       
-      // Buscar si el ID de la opción del producto está en los valores de esta opción configurable
+      // Check if the product option ID is in the values of this configurable option
       const found = configOption.values.some(value => value.id === optionId);
       
       if (found) {
@@ -291,38 +291,38 @@ function initSelectedOptions() {
   
   selectedOptions.value = initialOptions;
   
-  // Actualizar el servicio con las opciones seleccionadas
+  // Update the service with the selected options
   optionsService.value.updateSelectedOptions(initialOptions);
 }
 
 onMounted(async () => {
   try {
-    // Cargar detalles del producto
+    // Load product details
     const productData = await catalog.getProduct.execute(productId);
     product.value = productData;
     
-    // Cargar opciones configurables si el producto tiene un tipo
+    // Load configurable options if the product has a type
     if (product.value.type) {
       try {
         const options = await catalog.productOptions.execute(product.value.type);
         
         configurableOptions.value = options;
         
-        // Inicializar el servicio de opciones
+        // Initialize the options service
         optionsService.value = new ProductOptionsService(options);
         
-        // Inicializar las opciones seleccionadas desde el producto
+        // Initialize selected options from the product
         if (product.value.options && product.value.options.length > 0) {
           initSelectedOptions();
         } else {
           selectedOptions.value = {};
         }
       } catch (error) {
-        console.error('Error al cargar las opciones configurables:', error);
+        console.error('Error loading configurable options:', error);
       }
     }
   } catch (error) {
-    console.error('Error al cargar los detalles del producto:', error);
+    console.error('Error loading product details:', error);
   }
 });
 
