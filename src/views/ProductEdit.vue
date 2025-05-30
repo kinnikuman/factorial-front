@@ -35,13 +35,27 @@ const product = ref({
   description: '',
   price: 0,
   image: '',
+  type: '',
   options: []
 });
+
+const configurableOptions = ref([]);
 
 onMounted(async () => {
   try {
     const productData = await catalog.getProduct.execute(productId)
     product.value = productData
+
+    if (product.value.type) {
+      try {
+        const options = await catalog.productOptions.execute(product.value.type)
+        configurableOptions.value = options
+
+        console.log(configurableOptions)
+      } catch (error) {
+        console.warn('No se pudieron cargar las opciones configurables:', error)
+      }
+    }
   } catch (error) {
     console.error('Error al cargar los detalles del producto:', error)
   }

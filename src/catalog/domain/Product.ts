@@ -4,5 +4,6 @@ export interface Product {
   price: number
   image: string
   description: string | undefined
+  type: string | undefined
   options: string[] | undefined
 }
