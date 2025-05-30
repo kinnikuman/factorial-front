@@ -15,8 +15,9 @@
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",
-    "@types/node": "^22.15.23",
+    "@types/node": "^22.15.27",
     "@vitejs/plugin-vue": "^4.5.0",
+    "@vitejs/plugin-vue-jsx": "^4.2.0",
     "@vue/eslint-config-prettier": "^8.0.0",
     "eslint": "^8.0.0",
     "eslint-plugin-vue": "^9.0.0",

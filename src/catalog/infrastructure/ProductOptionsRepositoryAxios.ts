@@ -7,19 +7,69 @@ export class ProductOptionsRepositoryAxios implements ProductOptionsRepository {
 
   async getConfigurableOptions(productType: string): Promise<ProductOption[]> {
     try {
-      const response = await axios.get<ProductOption[]>(
+      const response = await axios.get<any[]>(
         `${this.baseUrl}/configurable-options/${productType}`
       )
-      return response.data
+      
+      if (!Array.isArray(response.data)) {
+        throw new Error('La respuesta de la API no tiene el formato esperado');
+      }
+      
+      // Agrupar opciones por tipo
+      const optionsByType: Record<string, any[]> = {};
+      
+      // Agrupar las opciones por tipo
+      response.data.forEach((option) => {
+        if (!option.type) {
+          console.warn('Opción sin tipo:', option);
+          return;
+        }
+        
+        if (!optionsByType[option.type]) {
+          optionsByType[option.type] = [];
+        }
+        
+        optionsByType[option.type].push(option);
+      });
+      
+      
+      // Convertir a la estructura esperada de ProductOption[]
+      const result: ProductOption[] = Object.entries(optionsByType).map(([type, options]) => {
+        return {
+          id: `${type}_group`,
+          type: type as any, // Convertir a los tipos permitidos
+          name: this.getOptionTypeName(type),
+          values: options.map(opt => ({
+            id: opt.id,
+            name: opt.name,
+            price: opt.price,
+            restrictions: opt.restrictions
+          }))
+        };
+      });
+      
+      return result;
+      
     } catch (err) {
       if (err instanceof AxiosError) {
         if (err.response?.status === 404) {
-          console.warn(`No se encontraron opciones configurables para el tipo: ${productType}`)
-          return []
+          return [];
         }
       }
-      console.error('Error al obtener las opciones configurables:', err)
-      throw new Error('Error al cargar las opciones configurables')
+      throw new Error('Error al cargar las opciones configurables');
     }
+  }
+
+  private getOptionTypeName(type: string): string {
+    // Mapeo de tipos a nombres amigables
+    const typeNames: Record<string, string> = {
+      'frame': 'Cuadro',
+      'wheels': 'Ruedas',
+      'rim_color': 'Color de llanta',
+      'chain': 'Cadena',
+      'finish': 'Acabado'
+    };
+    
+    return typeNames[type] || type;
   }
 }
